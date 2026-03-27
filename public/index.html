@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Eight Hour World — Trailer</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --accent: #e8c97e;
+      --ctrl-bg: rgba(0, 0, 0, 0.55);
+      --ctrl-radius: 6px;
+      --transition: 0.6s ease;
+    }
+
+    html, body {
+      height: 100%;
+      background: #000;
+      font-family: 'Georgia', serif;
+      color: #fff;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* ── Scene layer ── */
+    #scene-bg {
+      position: fixed;
+      inset: 0;
+      background-size: cover;
+      background-position: center;
+      transition: background-image var(--transition), opacity var(--transition);
+      z-index: 0;
+    }
+    #scene-bg::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        to bottom,
+        rgba(0,0,0,0.25) 0%,
+        rgba(0,0,0,0.05) 40%,
+        rgba(0,0,0,0.55) 100%
+      );
+    }
+
+    /* ── Text overlay ── */
+    #scene-text {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 0 8% 18%;
+      z-index: 1;
+      pointer-events: none;
+      transition: opacity var(--transition);
+    }
+    #scene-text.align-center { align-items: center; text-align: center; padding-left: 15%; padding-right: 15%; }
+    #scene-text.align-left   { align-items: flex-start; text-align: left; }
+    #scene-text.align-right  { align-items: flex-end; text-align: right; padding-right: 8%; padding-left: 40%; }
+
+    #scene-heading {
+      font-size: clamp(0.65rem, 1.5vw, 0.9rem);
+      letter-spacing: 0.35em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 0.9rem;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity 0.5s 0.1s, transform 0.5s 0.1s;
+    }
+    #scene-heading.visible { opacity: 1; transform: translateY(0); }
+
+    #scene-main {
+      font-size: clamp(1.4rem, 4vw, 2.8rem);
+      font-weight: 400;
+      line-height: 1.25;
+      text-shadow: 0 2px 18px rgba(0,0,0,0.8);
+      margin-bottom: 0.75rem;
+      opacity: 0;
+      transform: translateY(14px);
+      transition: opacity 0.5s 0.2s, transform 0.5s 0.2s;
+    }
+    #scene-main.visible { opacity: 1; transform: translateY(0); }
+
+    #scene-sub {
+      font-size: clamp(0.75rem, 1.6vw, 1rem);
+      letter-spacing: 0.05em;
+      color: rgba(255,255,255,0.65);
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity 0.5s 0.35s, transform 0.5s 0.35s;
+    }
+    #scene-sub.visible { opacity: 1; transform: translateY(0); }
+
+    /* ── Controls bar ── */
+    #controls {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 10;
+      padding: 1rem 1.5rem 1.4rem;
+      background: linear-gradient(to top, rgba(0,0,0,0.75) 0%, transparent 100%);
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+
+    /* Progress bar */
+    #progress-bar {
+      width: 100%;
+      height: 3px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 2px;
+      cursor: pointer;
+      position: relative;
+    }
+    #progress-fill {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 2px;
+      width: 0%;
+      transition: width 0.1s linear;
+      pointer-events: none;
+    }
+    #progress-bar:hover { height: 5px; }
+
+    /* Buttons row */
+    #controls-row {
+      display: flex;
+      align-items: center;
+      gap: 0.9rem;
+    }
+
+    .ctrl-btn {
+      background: var(--ctrl-bg);
+      border: none;
+      color: #fff;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: background 0.2s, transform 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .ctrl-btn:hover  { background: rgba(255,255,255,0.2); transform: scale(1.1); }
+    .ctrl-btn:active { transform: scale(0.95); }
+    .ctrl-btn svg { display: block; }
+
+    #time-display {
+      font-size: 0.78rem;
+      color: rgba(255,255,255,0.7);
+      letter-spacing: 0.05em;
+      margin-left: auto;
+    }
+
+    #mute-btn { margin-left: 0; }
+
+    /* Scene counter */
+    #scene-counter {
+      position: fixed;
+      top: 1.2rem;
+      right: 1.5rem;
+      font-size: 0.7rem;
+      letter-spacing: 0.18em;
+      color: rgba(255,255,255,0.45);
+      z-index: 10;
+    }
+
+    /* Idle: hide controls after inactivity */
+    body.idle #controls { opacity: 0; pointer-events: none; transition: opacity 1.2s; }
+    body.idle #scene-counter { opacity: 0; transition: opacity 1.2s; }
+    #controls { transition: opacity 0.3s; }
+    #scene-counter { transition: opacity 0.3s; }
+
+    /* Splash / ended overlay */
+    #splash {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      background: rgba(0,0,0,0.88);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1.6rem;
+      transition: opacity 0.6s;
+    }
+    #splash.hidden { opacity: 0; pointer-events: none; }
+
+    #splash-title {
+      font-size: clamp(1.4rem, 4vw, 2.4rem);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+    #splash-sub {
+      font-size: 0.9rem;
+      color: rgba(255,255,255,0.55);
+      letter-spacing: 0.08em;
+    }
+    #play-btn-large {
+      width: 74px;
+      height: 74px;
+      border-radius: 50%;
+      border: 2px solid var(--accent);
+      background: rgba(232,201,126,0.12);
+      color: var(--accent);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s, transform 0.15s;
+    }
+    #play-btn-large:hover  { background: rgba(232,201,126,0.25); transform: scale(1.06); }
+    #play-btn-large:active { transform: scale(0.96); }
+  </style>
+</head>
+<body>
+
+  <!-- Background image layer -->
+  <div id="scene-bg"></div>
+
+  <!-- Scene text -->
+  <div id="scene-text" aria-live="polite">
+    <div id="scene-heading"></div>
+    <div id="scene-main"></div>
+    <div id="scene-sub"></div>
+  </div>
+
+  <!-- Scene counter (top-right) -->
+  <div id="scene-counter"></div>
+
+  <!-- Playback controls -->
+  <div id="controls" role="region" aria-label="Playback controls">
+    <div id="progress-bar" role="slider" aria-label="Seek" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" tabindex="0">
+      <div id="progress-fill"></div>
+    </div>
+    <div id="controls-row">
+      <!-- Play / Pause -->
+      <button class="ctrl-btn" id="play-pause-btn" aria-label="Play">
+        <svg id="icon-play" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+          <polygon points="5,3 19,12 5,21"/>
+        </svg>
+        <svg id="icon-pause" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="display:none">
+          <rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>
+        </svg>
+      </button>
+
+      <!-- Restart -->
+      <button class="ctrl-btn" id="restart-btn" aria-label="Restart">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="1 4 1 10 7 10"/>
+          <path d="M3.51 15a9 9 0 1 0 .49-4.65"/>
+        </svg>
+      </button>
+
+      <!-- Time display -->
+      <div id="time-display">0:00 / 1:06</div>
+
+      <!-- Mute -->
+      <button class="ctrl-btn" id="mute-btn" aria-label="Mute">
+        <svg id="icon-sound" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+          <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+          <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+        </svg>
+        <svg id="icon-muted" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+          <line x1="23" y1="9" x2="17" y2="15"/>
+          <line x1="17" y1="9" x2="23" y2="15"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Splash / ended screen -->
+  <div id="splash">
+    <div id="splash-title">Eight Hour World</div>
+    <div id="splash-sub">Trailer — 1 min 6 sec</div>
+    <button id="play-btn-large" aria-label="Play trailer">
+      <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
+        <polygon points="5,3 19,12 5,21"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Hidden audio element -->
+  <audio id="audio" src="assets/voiceover.mp3" preload="auto" aria-label="Trailer voiceover"></audio>
+
+  <script type="module">
+    import { TrailerPlayer } from "../src/player.js";
+
+    // ── DOM refs ──────────────────────────────────────────────────────────────
+    const sceneBg      = document.getElementById("scene-bg");
+    const sceneText    = document.getElementById("scene-text");
+    const sceneHeading = document.getElementById("scene-heading");
+    const sceneMain    = document.getElementById("scene-main");
+    const sceneSub     = document.getElementById("scene-sub");
+    const sceneCounter = document.getElementById("scene-counter");
+    const progressBar  = document.getElementById("progress-bar");
+    const progressFill = document.getElementById("progress-fill");
+    const timeDisplay  = document.getElementById("time-display");
+    const playPauseBtn = document.getElementById("play-pause-btn");
+    const iconPlay     = document.getElementById("icon-play");
+    const iconPause    = document.getElementById("icon-pause");
+    const restartBtn   = document.getElementById("restart-btn");
+    const muteBtn      = document.getElementById("mute-btn");
+    const iconSound    = document.getElementById("icon-sound");
+    const iconMuted    = document.getElementById("icon-muted");
+    const splash       = document.getElementById("splash");
+    const playBtnLarge = document.getElementById("play-btn-large");
+    const audio        = document.getElementById("audio");
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+    function clamp(value, min, max) { return Math.max(min, Math.min(max, value)); }
+
+    function formatTime(secs) {
+      const m = Math.floor(secs / 60);
+      const s = Math.floor(secs % 60).toString().padStart(2, "0");
+      return `${m}:${s}`;
+    }
+
+    let lastBg = "";
+    function applyScene(scene) {
+      if (!scene) {
+        sceneHeading.classList.remove("visible");
+        sceneMain.classList.remove("visible");
+        sceneSub.classList.remove("visible");
+        return;
+      }
+
+      const newBg = `url('${scene.background}')`;
+      if (newBg !== lastBg) {
+        lastBg = newBg;
+        sceneBg.style.backgroundImage = newBg;
+      }
+
+      sceneText.className = `align-${scene.align || "center"}`;
+
+      // Animate text in
+      [sceneHeading, sceneMain, sceneSub].forEach(el => el.classList.remove("visible"));
+      sceneHeading.textContent = scene.heading || "";
+      sceneMain.textContent    = scene.text    || "";
+      sceneSub.textContent     = scene.subtext || "";
+
+      // Trigger CSS transitions after a micro-task
+      requestAnimationFrame(() => {
+        if (scene.heading) sceneHeading.classList.add("visible");
+        sceneMain.classList.add("visible");
+        if (scene.subtext) sceneSub.classList.add("visible");
+      });
+
+      // Counter (e.g. "3 / 9")
+      const idx = player.scenes.indexOf(scene) + 1;
+      sceneCounter.textContent = `${idx} / ${player.scenes.length}`;
+    }
+
+    function syncPlayIcon(playing) {
+      iconPlay.style.display  = playing ? "none"  : "block";
+      iconPause.style.display = playing ? "block" : "none";
+      playPauseBtn.setAttribute("aria-label", playing ? "Pause" : "Play");
+    }
+
+    function syncAudio(playing, currentTime) {
+      if (playing) {
+        audio.currentTime = currentTime;
+        audio.play().catch(() => {});
+      } else {
+        audio.pause();
+      }
+    }
+
+    // Track whether playback has reached the end (used by the splash replay logic)
+    let hasEnded = false;
+
+    // ── Player ────────────────────────────────────────────────────────────────
+    const player = new TrailerPlayer({
+      onTimeUpdate(time, duration) {
+        const pct = duration > 0 ? (time / duration) * 100 : 0;
+        progressFill.style.width = `${pct}%`;
+        progressBar.setAttribute("aria-valuenow", Math.round(pct));
+        timeDisplay.textContent = `${formatTime(time)} / ${formatTime(duration)}`;
+      },
+
+      onSceneChange(scene) {
+        applyScene(scene);
+      },
+
+      onStateChange(playing) {
+        syncPlayIcon(playing);
+        syncAudio(playing, player.currentTime);
+      },
+
+      onEnded() {
+        hasEnded = true;
+        syncPlayIcon(false);
+        audio.pause();
+        // Show replay splash
+        splash.querySelector("#splash-sub").textContent = "Replay";
+        splash.classList.remove("hidden");
+      },
+    });
+
+    // Show the first scene as background on load
+    applyScene(player.scenes[0]);
+    sceneBg.style.backgroundImage = `url('${player.scenes[0].background}')`;
+    sceneCounter.textContent = `1 / ${player.scenes.length}`;
+
+    // ── UI events ─────────────────────────────────────────────────────────────
+    playBtnLarge.addEventListener("click", () => {
+      splash.classList.add("hidden");
+      if (hasEnded) {
+        hasEnded = false;
+        player.seek(0);
+      }
+      player.play();
+    });
+
+    playPauseBtn.addEventListener("click", () => {
+      if (!splash.classList.contains("hidden")) {
+        splash.classList.add("hidden");
+      }
+      player.toggle();
+    });
+
+    restartBtn.addEventListener("click", () => {
+      player.seek(0);
+      applyScene(player.scenes[0]);
+      if (!player.playing) player.play();
+    });
+
+    muteBtn.addEventListener("click", () => {
+      audio.muted = !audio.muted;
+      iconSound.style.display = audio.muted ? "none"  : "block";
+      iconMuted.style.display = audio.muted ? "block" : "none";
+      muteBtn.setAttribute("aria-label", audio.muted ? "Unmute" : "Mute");
+    });
+
+    // Progress bar — click to seek
+    progressBar.addEventListener("click", (e) => {
+      const rect = progressBar.getBoundingClientRect();
+      const ratio = clamp((e.clientX - rect.left) / rect.width, 0, 1);
+      player.seek(ratio * player.duration);
+      if (!player.playing) {
+        audio.currentTime = player.currentTime;
+      }
+    });
+
+    // Progress bar — keyboard seek (← →)
+    progressBar.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowRight") player.seek(player.currentTime + 2);
+      if (e.key === "ArrowLeft")  player.seek(player.currentTime - 2);
+    });
+
+    // Space bar — toggle play/pause
+    document.addEventListener("keydown", (e) => {
+      if (e.target.tagName === "BUTTON" || e.target.tagName === "INPUT") return;
+      if (e.code === "Space") {
+        e.preventDefault();
+        if (!splash.classList.contains("hidden")) {
+          splash.classList.add("hidden");
+          player.play();
+        } else {
+          player.toggle();
+        }
+      }
+    });
+
+    // ── Idle hide controls ────────────────────────────────────────────────────
+    let idleTimer = null;
+    function resetIdle() {
+      document.body.classList.remove("idle");
+      clearTimeout(idleTimer);
+      if (player.playing) {
+        idleTimer = setTimeout(() => document.body.classList.add("idle"), 3500);
+      }
+    }
+    document.addEventListener("mousemove", resetIdle);
+    document.addEventListener("keydown",   resetIdle);
+    document.addEventListener("click",     resetIdle);
+  </script>
+</body>
+</html>
