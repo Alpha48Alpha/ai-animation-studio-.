@@ -19,3 +19,8 @@ htmlcov/
 .venv/
 venv/
 env/
+
+# Node / Vite
+node_modules/
+.vite/
+dist/
